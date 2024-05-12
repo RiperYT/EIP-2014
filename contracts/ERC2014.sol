@@ -9,6 +9,7 @@ import "./IERC20.sol";
 
 contract ERC2014 is IERC2014{
     uint private _tokenCounter = 0;
+    uint private _balance;
     mapping(uint => mapping(address => uint)) private _balances;
     mapping(address => mapping(address => bool)) private _operatorApprovals;
 
@@ -21,12 +22,11 @@ contract ERC2014 is IERC2014{
     mapping(uint => uint) private _purchasePrices;
     mapping(uint => bool) private _purchasePermissions;
     
-    IERC20 private erc20Token;
     address private _owner; 
 
-    constructor(address ERC20address_, address owner) {
+    constructor(address owner) {
         _owner = owner;
-        erc20Token = IERC20(ERC20address_);
+        _balance = address(this).balance;
     }
 
     function balanceOf(address account, uint id) public view returns(uint) {
@@ -375,17 +375,9 @@ contract ERC2014 is IERC2014{
         require(tokensToPurchase > 0, "No tokens available for purchase or limit reached");
 
         uint256 requiredPayment = tokensToPurchase * _purchasePrices[id];
-        uint256 initialBalance = erc20Token.balanceOf(address(this));
-        
-        require(
-            erc20Token.transferFrom(msg.sender, address(this), requiredPayment),
-            "Transfer failed"
-        );
-
-        require(
-            (erc20Token.balanceOf(address(this)) - initialBalance) >= requiredPayment,
-            "Payment not verified"
-        );
+        uint balance = address(this).balance;
+        require(balance >= _balance + requiredPayment, "Payment not verified");
+        _balance = balance;
 
         _balances[id][msg.sender] += tokensToPurchase;
         _countTokens[id] += tokensToPurchase;
@@ -471,9 +463,9 @@ contract ERC2014 is IERC2014{
     }
 
     function withdrawFunds() external onlyOwner {
-        uint256 balance = erc20Token.balanceOf(address(this));
-        require(balance > 0, "No funds to withdraw");
-        require(erc20Token.transfer(_owner, balance), "Withdrawal failed");
+        require(address(this).balance > 0, "No funds to withdraw");
+        payable(_owner).transfer(address(this).balance);
+        _balance = address(this).balance;
     }
 
     function _safeTransferFrom(

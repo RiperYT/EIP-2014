@@ -8,7 +8,7 @@ contract UADonate is ERC2014{
     string public name;
     string public symbol;
 
-    constructor(string memory Name, string memory Symbol, address ERC20address_) ERC2014(ERC20address_, msg.sender)
+    constructor(string memory Name, string memory Symbol) ERC2014(msg.sender)
     {
         name = Name;
         symbol = Symbol;
