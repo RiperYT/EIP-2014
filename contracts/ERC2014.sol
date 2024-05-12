@@ -5,8 +5,6 @@ pragma solidity ^0.8.0;
 import "./IERC2014.sol";
 import "./IERC2014Receiver.sol";
 
-import "./IERC20.sol";
-
 contract ERC2014 is IERC2014{
     uint private _tokenCounter = 0;
     uint private _balance;
