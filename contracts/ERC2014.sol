@@ -401,8 +401,8 @@ contract ERC2014 is IERC2014{
         _balances[tokenId][account] -= amount;
         _balances[newTokenId][account] += newAmount;
 
-        _issuedTokens[tokenId] -= amount;
-        _issuedTokens[newTokenId] += newAmount;
+        _countTokens[tokenId] -= amount;
+        _countTokens[newTokenId] += newAmount;
     }
         
     function upgradeTokenBatch(
