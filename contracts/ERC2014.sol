@@ -20,73 +20,73 @@ contract ERC2014 is IERC2014{
     mapping(uint => uint) private _purchasePrices;
     mapping(uint => bool) private _purchasePermissions;
     
-    address private _owner; 
+    address private _ownerContract; 
 
     constructor(address owner) {
-        _owner = owner;
+        _ownerContract = owner;
         _balance = address(this).balance;
     }
 
-    function balanceOf(address account, uint id) public view returns(uint) {
-        require(account != address(0));
-        return _balances[id][account];
+    function balanceOf(address _owner, uint _id) public view returns(uint) {
+        require(_owner != address(0));
+        return _balances[_id][_owner];
     }
 
     function balanceOfBatch(
-        address[] calldata accounts,
-        uint[] calldata ids
+        address[] calldata _owners,
+        uint[] calldata _ids
     ) public view returns(uint[] memory batchBalances) {
-        require(accounts.length == ids.length);
+        require(_owners.length == _ids.length);
 
-        batchBalances = new uint[](accounts.length);
+        batchBalances = new uint[](_owners.length);
 
-        for(uint i = 0; i < accounts.length; ++i) {
-            batchBalances[i] = balanceOf(accounts[i], ids[i]);
+        for(uint i = 0; i < _owners.length; ++i) {
+            batchBalances[i] = balanceOf(_owners[i], _ids[i]);
         }
     }
 
     function setApprovalForAll(
-        address operator,
-        bool approved
+        address _operator,
+        bool _approved
     ) external {
-        _setApprovalForAll(msg.sender, operator, approved);
+        _setApprovalForAll(msg.sender, _operator, _approved);
     }
 
     function isApprovedForAll(
-        address account,
-        address operator
+        address _owner,
+        address _operator
     ) public view returns(bool) {
-        return _operatorApprovals[account][operator];
+        return _operatorApprovals[_owner][_operator];
     }
 
     function safeTransferFrom(
-        address from,
-        address to,
-        uint id,
-        uint amount,
-        bytes calldata data
+        address _from,
+        address _to,
+        uint _id,
+        uint _value,
+        bytes calldata _data
     ) external {
         require(
-            from == msg.sender ||
-            isApprovedForAll(from, msg.sender)
+            _from == msg.sender ||
+            isApprovedForAll(_from, msg.sender)
         );
 
-        _safeTransferFrom(from, to, id, amount, data);
+        _safeTransferFrom(_from, _to, _id, _value, _data);
     }
 
     function safeBatchTransferFrom(
-        address from,
-        address to,
-        uint[] calldata ids,
-        uint[] calldata amounts,
-        bytes calldata data
+        address _from,
+        address _to,
+        uint[] calldata _ids,
+        uint[] calldata _values,
+        bytes calldata _data
     ) external {
         require(
-            from == msg.sender ||
-            isApprovedForAll(from, msg.sender)
+            _from == msg.sender ||
+            isApprovedForAll(_from, msg.sender)
         );
 
-        _safeBatchTransferFrom(from, to, ids, amounts, data);
+        _safeBatchTransferFrom(_from, _to, _ids, _values, _data);
     }
 
     function setBaseURI(
@@ -105,6 +105,7 @@ contract ERC2014 is IERC2014{
     ) onlyOwner external {
         require(_isTokenIssued(id));
         _tokenURIs[id] = uri;
+        emit URI(uri, id);
     }
 
     function setCustomURIBatch(
@@ -115,6 +116,7 @@ contract ERC2014 is IERC2014{
         for (uint i = 0; i < ids.length; i++) {
             require(_isTokenIssued(ids[i]));
             _tokenURIs[ids[i]] = uris[i];
+            emit URI(uris[i], ids[i]);
         }
     }
 
@@ -314,10 +316,12 @@ contract ERC2014 is IERC2014{
       }
       if (bytes(uri).length > 0) {
         _tokenURIs[newTokenId] = uri;
+        emit URI(uri, newTokenId);
       }
 
       // Emit an Issued event
       emit Issued(newTokenId, price, purchasePermission, limit, uri);
+      emit TransferSingle(msg.sender, address(0x0), msg.sender, newTokenId, limit);
 
       return newTokenId;
     }
@@ -348,9 +352,11 @@ contract ERC2014 is IERC2014{
             }
             if (bytes(uris[i]).length > 0) {
                 _tokenURIs[newTokenId] = uris[i];
+                emit URI(uris[i], newTokenId);
             }
 
             emit Issued(newTokenId, prices[i], purchasePermissions[i], limits[i], uris[i]);
+            emit TransferSingle(msg.sender, address(0x0), msg.sender, newTokenId, limits[i]);
 
             issuedTokenIds[i] = newTokenId;
         }
@@ -379,6 +385,8 @@ contract ERC2014 is IERC2014{
 
         _balances[id][msg.sender] += tokensToPurchase;
         _countTokens[id] += tokensToPurchase;
+
+        emit TransferSingle(msg.sender, address(0x0), msg.sender, id, tokensToPurchase);
     }
 
     function upgradeToken(
@@ -401,6 +409,9 @@ contract ERC2014 is IERC2014{
 
         _countTokens[tokenId] -= amount;
         _countTokens[newTokenId] += newAmount;
+
+        emit TransferSingle(msg.sender, account, address(0x0), tokenId, amount);
+        emit TransferSingle(msg.sender, address(0x0), account, newTokenId, newAmount);
     }
         
     function upgradeTokenBatch(
@@ -435,6 +446,9 @@ contract ERC2014 is IERC2014{
             // Update issued tokens counts
             _issuedTokens[tokenId] -= amount;
             _issuedTokens[newTokenId] += newAmount;
+            
+            emit TransferSingle(msg.sender, account, address(0x0), tokenId, amount);
+            emit TransferSingle(msg.sender, address(0x0), account, newTokenId, newAmount);
         }
     }
 
@@ -462,7 +476,7 @@ contract ERC2014 is IERC2014{
 
     function withdrawFunds() external onlyOwner {
         require(address(this).balance > 0, "No funds to withdraw");
-        payable(_owner).transfer(address(this).balance);
+        payable(_ownerContract).transfer(address(this).balance);
         _balance = address(this).balance;
     }
 
@@ -609,7 +623,7 @@ contract ERC2014 is IERC2014{
     }
     
     modifier onlyOwner() {
-        require(msg.sender == _owner, "Caller is not the owner");
+        require(msg.sender == _ownerContract, "Caller is not the owner");
         _;
     }
 }

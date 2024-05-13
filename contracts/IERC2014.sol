@@ -4,36 +4,36 @@ pragma solidity ^0.8.0;
 
 interface IERC2014 {
     event TransferSingle(
-        address indexed operator,
-        address indexed from,
-        address indexed to,
-        uint id,
-        uint value
+        address indexed _operator,
+        address indexed _from,
+        address indexed _to,
+        uint _id,
+        uint _value
     );
 
     event TransferBatch(
-        address indexed operator,
-        address indexed from,
-        address indexed to,
-        uint[] ids,
-        uint[] values
+        address indexed _operator,
+        address indexed _from,
+        address indexed _to,
+        uint[] _ids,
+        uint[] _values
     );
 
     event ApprovalForAll(
-        address indexed account,
-        address indexed operator,
-        bool approved
+        address indexed _owner,
+        address indexed _operator,
+        bool _approved
     );
 
     event Issued(
-      uint indexed tokenId,
-      uint price,
-      bool purchasePermission,
-      uint limit,
-      string uri
+      uint indexed _tokenId,
+      uint _price,
+      bool _purchasePermission,
+      uint _limit,
+      string _uri
     );
     
-    event URI(string value, uint indexed id);
+    event URI(string _value, uint indexed _id);
 
     function balanceOf(address account, uint id) external view returns(uint);
 

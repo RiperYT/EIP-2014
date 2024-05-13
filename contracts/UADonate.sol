@@ -15,8 +15,8 @@ contract UADonate is ERC2014{
     }
 
     function uri(
-        uint _tokenId
+        uint _id
     ) public view returns (string memory) {
-        return this.getURI(_tokenId);
+        return this.getURI(_id);
     }
 }
